@@ -1,0 +1,34 @@
+## protein_annotation.txt 
+
+## here we will extract the protein sequences and coding sequences for each genome and perform annotations
+
+
+## Extracting protein sequences based on genomes can be done using a variety of approaches including:
+## 1) genometools (gt_extract)
+## 2) evidencemodeler/EvmUtils/gff3_file_to_proteins.pl
+## 3) extract from augustus gene predictions
+## 4) bioperl custom code
+
+## for simplicity, we have ran augustus with the --protein=true and --coding=true option
+## now we can use augustus scripts to extract the sequences like so:
+
+% ~/path_to_augustus/scripts/getAnnoFasta.pl 98_06.cat.gff3 ##  will extract proteins and coding sequences
+
+## now we have the protein sequences, let's do some annotation using Pfam scanning and BLASTp analyses against the swissprot/uniprotDB
+
+## hmmsearch
+% proteins=98_06.cat3.aa
+% head -100 98_06.cat3.aa > test.aa
+% testprot=test.aa
+% gunzip Pfam-A.hmm.gz ##extract Pfam-A database
+% hmmpress Pfam-A.hmm ##prepare hmm database using hmmpress
+% hmmsearch --cpu 4 -o ${testprot}.Pfam-A.out --tblout ${testprot}.Pfam-A.tbl --pfamtblout ${testprot}.Pfam-A -E 1e-10 Pfam-A.hmm ${testprot} ##perform calculations
+
+## blastp
+% makeblastdb -dbtype prot -in ~/Desktop/Jonge/dbs/uniprot.fa
+% blastp -db ~/Desktop/Jonge/dbs/uniprot.fa -query ${proteins} -outfmt 6 -evalue 1e-10 -out ${proteins}.blastp.uniprot.out -num_threads 4
+
+## signalp 
+% signalp -t euk -f short ${proteins} > ${proteins}.signalP.out
+
+

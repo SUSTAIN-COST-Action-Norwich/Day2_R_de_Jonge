@@ -1,0 +1,62 @@
+## running_augustus.txt
+## here we experiment with Augustus to predict protein-coding gene models on select genome sequences
+### open the terminal ###
+## Augustus is pre-installed and can be invoked like this:
+
+% augustus 
+
+## Running augustus without parameters will produce the help documentation
+## to get information about available species parameters one can run:
+
+% augustus --species=help 
+
+## note the short name or identifier, these are typically used during the initiation of gene prediction
+## before we proceed to predict genes we will first split the genome in X equal bits, in this way we can speed up the prediction X-fold (depending on X available threads)
+## 
+## Step 1: we will split based on the genome size ; typically the uncompressed filesize is a good indication
+
+% cd /home/student1/Desktop/trainers/Jonge ## change into directory de Jonge
+## copy files from GDrive into this directory 
+## unzip all files (will produce a set of directories, including assemblies)
+% cd assemblies
+% ls -l *.fna  ##return list of files in the current directory ending on fna
+
+## look at the file sizes, these are your estimated genome size 
+## now we split based on this file size in X subsets using splitMfasta.pl (part of the augustus install)
+
+% /path_to_augustus/scripts/splitMfasta.pl ## invoking without options will again produce a help file , examine the requested parameters
+
+## imagine having eight available threads, let's split the file in eight approx
+
+% approx_size=42864301 ## this will store the size in a variable, you can use variables for all sorts of things later on
+% genome_split=$(expr ${approx_size} / 8) ## lets do some command line calculation to get a splitted file based on 8 threads
+% echo ${genome_split} ## if you want to know the size of the genome_split
+
+## now lets split the file using splitMfasta.pl
+% genome=98_06.fna ##picking a genome here and saving it (for clarity in the code)
+
+% /path_to_augustus/scripts/splitMfasta.pl ${genome} --minsize=${genome_split}
+
+## examine the output (ls -l), do we have the correct number of files?
+## because splitMfasta.pl uses a minimal size, it doesn't break contigs/scaffolds/chromosomes, this is obviously important
+## now lets run augustus on one of the splitted files (code to run for all follows; don't execute it)
+
+% augustus --species=magnaporthe_grisea --gff3=on --strand=both --genemodel=complete --protein=on --codingseq=on --uniqueGeneId=true 98_06.split.1.fa > 98_06.split.1.gff3
+##  ignore the error about CDS/stopcodong feature
+## examine the output 
+## 1) how many input sequences were there (hint: use grep or alike to 'fish' for relevant lines)
+## 2) how many genes were predicted in total?
+## As you'll notice, running augustus takes quite a while , for the sake of this workshop predictions have been prepared (got to GDrive unpacked files then pre-calculations, gene_predictions, augustus)
+
+## if one were to follow this procedure and run augustus on all split files at once (so multi-threading) one could do this:
+% for fasta in 98_06.split.*.fa ; do base=$(basename ${fasta} .fa) && augustus --species=magnaporthe_grisea --gff3=on --strand=both --genemodel=complete --protein=on --codingseq=on --uniqueGeneId=true ${fasta} > ${base}.gff3 & done
+% cat ${base}.gff3} > ${base}.cat.gff3
+## the first command runs a augustus prediction in a for loop for all splitted files (so eight in total) and runs in the background (because of added & sign) 
+## $(basename ${fasta} .fa) takes the filename ${fasta} and cuts away the last .fa
+
+## inspect the predictions (both with species_mg_ and species_af_ , respectively produced by running augustus with magnaporthe_grisea and aspergillus_fumigatus parameters)
+
+## how many protein-coding gene models were predicted for all the different genome sequences?
+
+## finished << return to course document
+

@@ -1,0 +1,23 @@
+## visualizing_genemodels.txt
+
+## in this (short) section we will examine the various gene predictions and compare to established gene predictions as well as RNA-Seq
+
+## For simplicity we will focus on the reference genome, MG8 (Magnaporthe oryzae strain 70-15)
+
+## Launch IGV and head over to "Genomes" > "Create .genome file" 
+### Provide a unique identifier (e.g. MG8)
+### Descriptive name (e.g. Magnaporthe oryzae 70-15)
+### FASTA file : browse and select the MG8_ref.fna file
+### Gene file : browse and select the MG8_ref.broad.gff3 (obtained from ENSEMBLE FUNGI: http://fungi.ensembl.org/info/website/ftp/index.html)
+### Click "OK"
+
+## The genome will open and display a chromosome with gene predictions below
+## Now we can import the gene predictions we prepared using augustus , as well as the RNA-Seq data
+### Go to "File" > "Load from file" and browse to the annotations folder and import 'MG8_ref.aug_species_mg.gff3' & 'MG8_ref.aug_species_af.gff3' as well as 'MG8_rnaseq_reads.bam'
+### Inspect the results , what looks better in general ? 
+### Obviously, one would like to get a better feel of specificity and accurateness, but that is beyond the scope of this workshop 
+### For those interested, GenomeTools (genometools.org) contains a function to calculate some of this, i.e. gt_eval
+
+## finished >> quick demonstration using WebApollo
+
+

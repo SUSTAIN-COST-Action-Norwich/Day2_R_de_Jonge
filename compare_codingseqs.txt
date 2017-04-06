@@ -1,0 +1,83 @@
+## compare codingsets/genome
+
+##extract proteins and codingseqs
+##augustus_output = ./path_to_course/annotation/augustus/predictions
+##gff3s = ${augustus_output}/*.gff3
+##assemblies = ./path_to_course/assemblies/*.fna
+
+% cd ./path_to_course/
+% mkdir comparisons
+% mkdir comparisons/codingseqs
+
+% cd comparisons/codingseqs
+## download blat and pslCDnaFilter from the GDrive
+% chmod +x ./blat   ##make blat executable
+% chmod +x ./pslCDnaFilter  ##make pslCDnaFilter executable
+
+##get codingseqs
+% for k in ${augustus_output}/*.gff3 ; do ln -s "$k" ; done             ##make symbolic link to the gff3s in the other directory
+% for k in *.gff3 ; do ~/path_to_augustus/scripts/getAnnoFasta.pl "$k" ; done      ##for each gff3 prepare *.codingseq and *.aa (CDS and peptides)
+
+##get assemblies
+% for k in ${assemblies}/*.fna ; do ln -s "$k" ; done             ##make symbolic link to all assemblies
+
+##now align all codingseqs to all genomes (or any combo which you would like)
+##we are relying on blat here, for its speed, simplicity and general excellence (especially well-suited for 'closely' related species/strains)
+
+% for genome in *.fna ; do for codingseqs in *.codingseqs ; do blat ${genome} ${codingseqs} -t=dna -q=rna ${genome}.${codingseqs}.psl ; done ; done
+
+## when all alignments are done we will first filter them and keep only good (arbritary) alignments and only keep the best (single!)
+## for this we use pslCDnaFilter (part of Kents' toolkit; see: https://github.com/ENCODE-DCC/kentUtils/tree/master/src/hg) 
+## filter sets are: 90% identity, 90% coverage and keep only best
+
+% for alignments in *.psl ; do pslCDnaFilter -minId=0.9 -minCover=0.9 -maxAligns=1 ${alignments} ${alignments}.f ; done
+
+## examine the output of *.psl.f ; how would one now determine how many genes are present in which genomes
+## what about false-negatives ? >> examine a codingseq versus genome within one genome
+
+## count total number of codingseqs for further calculations
+% grep ">" -c *.codingseq
+
+## count total number of alignments in each *.psl.f
+% grep "" -c *.psl.f
+
+## you'll see there are 0% false negatives (that's a good thing)
+
+## now determine the overlaps and differences between the genomes ; e.g. how many genes are shared and unique in the combi 98-06 <> 70-15 (MG8_ref)
+
+## examine the unique genes for function and possibility for secretion (see protein_annotation.txt)
+## extract relevant proteins (e.g. genes unique in 98_06 compared to reference MG8 (70-15))
+
+% grep ">" 98_06.cat3.codingseq | sed -e 's/>//' | sort > 98_06.codingseq.list ## get all codingseq IDs and strip the fasta header symbol ## we are sorting to make our lives easier (afterwards)
+% grep "" -c 98_06.codingseq.list   ## the amount of codingseqs in 98_06 
+% cut -f10 MG8_ref.fna.98_06.cat3.codingseq.psl.f | sort > 98_06.codingseq.aligned2MG8.list  ##get all aligned 98_06 codingseqs (present on the MG8 genome) ## we are sorting to make our lives easier (afterwards)
+
+## because we sorted we can now use the 'comm' tool to compare lists (and extract overlap/non-overlaps)
+
+% comm -23 98_06.codingseq.list 98_06.codingseq.aligned2MG8.list > 98_06.codingseqs.unique.list ## examine comm --help for the proper syntax
+
+## let's assess the function of these (340) sequences 
+
+% cat 98_06.codingseqs.unique.list | cut -f3-6 -d'.' | while read a ; do awk 'BEGIN {RS=">"} /'$a'/ {print ">"$0}' 98_06.cat3.aa ; done > 98_06.unique.aa
+## this requires some explanations, firstly, codingseqs and peptide headers are not identical, so we have to make them in order to use some search functions
+## secondly, we use awk to grep fasta records (we split based on the fasta header, and print each record, preceeded by the separator)
+
+##now we can annotate them, e.g. using Pfam (see protein_annotation)
+% hmmscan --cpu 4 -o 98_06.unique.Pfam.out --tblout 98_06.unique.Pfam.tblout --pfamtblout 98_06.unique.Pfam -E 1e-10 Pfam-A.hmm 98_06.unique.aa
+##and predict secreted proteins using signalp
+% signalp -t euk -f short 98_06.unique.aa > 98_06.unique_aa.signalP.out
+% grep SignalP-TM 98_06.unique_aa.signalP.out ##grep those secreted proteins (how many are there?)
+
+##now we can look for those interesting 98_06-specific secreted protein-coding genes
+% grep SignalP-TM 98_06.unique_aa.signalP.out | cut -f1 -d ' ' | grep -f - 98_06.unique.Pfam.tblout | less -S  ###examine those 37 secreted proteins
+
+## finished (design your own comparison if you like now .... )
+
+
+
+
+
+
+
+
+
